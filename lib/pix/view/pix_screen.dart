@@ -71,7 +71,7 @@ class _PixScreenState extends State<PixScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Pix QR Generation',
+                    'Pix QR Generator',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 16),
