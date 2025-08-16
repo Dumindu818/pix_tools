@@ -33,9 +33,7 @@ class _PixScreenState extends State<PixScreen> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        FocusScope.of(
-          context,
-        ).unfocus(); // Hide keyboard when tapping background
+        FocusScope.of(context).unfocus();
       },
       child: BlocProvider(
         create: (_) => PixBloc(),
@@ -53,13 +51,11 @@ class _PixScreenState extends State<PixScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🔹 Title
                   Text(
                     'Pix QR Generation',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 16),
-
                   _buildField('Name', _nameController),
                   _buildField('Pix Key', _keyController),
                   _buildField('City', _cityController),
@@ -71,11 +67,9 @@ class _PixScreenState extends State<PixScreen> {
                   _buildField('Description (optional)', _descController),
                   _buildField('Transaction ID (optional)', _txidController),
                   const SizedBox(height: 16),
-
                   ElevatedButton(
                     onPressed: () {
                       FocusScope.of(context).unfocus();
-
                       final options = PixOptions(
                         name: _nameController.text.trim(),
                         key: _keyController.text.trim(),
@@ -97,7 +91,6 @@ class _PixScreenState extends State<PixScreen> {
                     child: const Text('Generate QR Code'),
                   ),
                   const SizedBox(height: 16),
-
                   if (state.pixCode != null) ...[
                     const Text(
                       'Pix BR Code:',
@@ -124,7 +117,7 @@ class _PixScreenState extends State<PixScreen> {
                         ElevatedButton.icon(
                           icon: const Icon(Icons.share),
                           label: const Text('Share QR Code'),
-                          onPressed: _shareQr,
+                          onPressed: () => _shareQr(state.pixCode!),
                         ),
                       ],
                     ),
@@ -167,13 +160,19 @@ class _PixScreenState extends State<PixScreen> {
     );
   }
 
-  Future<void> _shareQr() async {
-    FocusScope.of(context).unfocus(); // hide keyboard
-    if (globalKey.currentContext == null) return;
+  Future<void> _shareQr(String pixCode) async {
+    FocusScope.of(context).unfocus();
     try {
-      final boundary =
-          globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3);
+      // ✅ Render QR on a white canvas
+      final qrPainter = QrPainter(
+        data: pixCode,
+        version: QrVersions.auto,
+        gapless: true,
+        color: Colors.black,
+        emptyColor: Colors.white,
+      );
+
+      final image = await qrPainter.toImage(400);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
@@ -183,7 +182,6 @@ class _PixScreenState extends State<PixScreen> {
       );
       await file.writeAsBytes(pngBytes);
 
-      /// ✅ Share the QR code image with text
       await Share.shareXFiles([
         XFile(file.path),
       ], text: 'Here is my Pix QR Code');
