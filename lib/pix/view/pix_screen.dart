@@ -33,16 +33,18 @@ class _PixScreenState extends State<PixScreen> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus(); // Hide keyboard when tapping background
+        FocusScope.of(
+          context,
+        ).unfocus(); // Hide keyboard when tapping background
       },
       child: BlocProvider(
         create: (_) => PixBloc(),
         child: BlocConsumer<PixBloc, PixState>(
           listener: (context, state) {
             if (state.error != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.error!)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.error!)));
             }
           },
           builder: (context, state) {
@@ -51,7 +53,7 @@ class _PixScreenState extends State<PixScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🔹 Added Title
+                  // 🔹 Title
                   Text(
                     'Pix QR Generation',
                     style: Theme.of(context).textTheme.headlineSmall,
@@ -72,7 +74,7 @@ class _PixScreenState extends State<PixScreen> {
 
                   ElevatedButton(
                     onPressed: () {
-                      FocusScope.of(context).unfocus(); // Hide keyboard on button press
+                      FocusScope.of(context).unfocus();
 
                       final options = PixOptions(
                         name: _nameController.text.trim(),
@@ -118,36 +120,11 @@ class _PixScreenState extends State<PixScreen> {
                             );
                           },
                         ),
+                        const SizedBox(width: 8),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.share),
                           label: const Text('Share QR Code'),
-                          onPressed: () async {
-                            FocusScope.of(context).unfocus();
-                            try {
-                              final boundary =
-                              globalKey.currentContext!.findRenderObject()
-                              as RenderRepaintBoundary?;
-                              if (boundary != null) {
-                                final image = await boundary.toImage(
-                                  pixelRatio: 3,
-                                );
-                                final byteData = await image.toByteData(
-                                  format: ui.ImageByteFormat.png,
-                                );
-                                final bytes = byteData!.buffer.asUint8List();
-
-                                final dir = await getTemporaryDirectory();
-                                final file = File('${dir.path}/pix_qr.png');
-                                await file.writeAsBytes(bytes);
-
-                                await Share.shareXFiles([XFile(file.path)]);
-                              }
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
-                          },
+                          onPressed: _shareQr,
                         ),
                       ],
                     ),
@@ -173,10 +150,10 @@ class _PixScreenState extends State<PixScreen> {
   }
 
   Widget _buildField(
-      String label,
-      TextEditingController controller, {
-        bool isNumber = false,
-      }) {
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextField(
@@ -188,5 +165,33 @@ class _PixScreenState extends State<PixScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _shareQr() async {
+    FocusScope.of(context).unfocus(); // hide keyboard
+    if (globalKey.currentContext == null) return;
+    try {
+      final boundary =
+          globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 3);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final pngBytes = byteData!.buffer.asUint8List();
+
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/shared_pix_qr_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await file.writeAsBytes(pngBytes);
+
+      /// ✅ Share the QR code image with text
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Here is my Pix QR Code');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Share failed: $e')));
+    }
   }
 }

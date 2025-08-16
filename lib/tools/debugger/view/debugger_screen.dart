@@ -8,6 +8,8 @@ import '../../../shared/scanner/qr_scanner_page.dart';
 import '../bloc/debugger_bloc.dart';
 import '../bloc/debugger_event.dart';
 import '../bloc/debugger_state.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class DebuggerScreen extends StatefulWidget {
   const DebuggerScreen({super.key});
@@ -30,15 +32,22 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
   }
 
   Future<void> _pickImage() async {
-    FocusScope.of(context).unfocus(); // Hide keyboard before picking image
+    FocusScope.of(context).unfocus();
     final picker = ImagePicker();
     final xfile = await picker.pickImage(source: ImageSource.gallery);
     if (xfile == null) return;
+
+    final inputImage = InputImage.fromFilePath(xfile.path);
+    final barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
+
     try {
-      final content = await QrCodeToolsPlugin.decodeFrom(xfile.path);
-      if (content != null) {
-        _inputCtrl.text = content;
-        context.read<DebuggerBloc>().add(DebuggerSetFromQr(content));
+      final barcodes = await barcodeScanner.processImage(inputImage);
+
+      if (barcodes.isNotEmpty) {
+        // Take the first QR code detected
+        final qrValue = barcodes.first.rawValue ?? '';
+        _inputCtrl.text = qrValue;
+        context.read<DebuggerBloc>().add(DebuggerSetFromQr(qrValue));
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(
@@ -50,6 +59,8 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+    } finally {
+      barcodeScanner.close();
     }
   }
 

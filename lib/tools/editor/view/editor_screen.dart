@@ -14,6 +14,8 @@ import '../../../shared/scanner/qr_scanner_page.dart';
 import '../bloc/editor_bloc.dart';
 import '../bloc/editor_event.dart';
 import '../bloc/editor_state.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key});
@@ -42,11 +44,18 @@ class _EditorScreenState extends State<EditorScreen> {
     final picker = ImagePicker();
     final xfile = await picker.pickImage(source: ImageSource.gallery);
     if (xfile == null) return;
+
+    final inputImage = InputImage.fromFilePath(xfile.path);
+    final barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
+
     try {
-      final content = await QrCodeToolsPlugin.decodeFrom(xfile.path);
-      if (content != null) {
-        _inputCtrl.text = content;
-        context.read<EditorBloc>().add(EditorSetFromQr(content));
+      final barcodes = await barcodeScanner.processImage(inputImage);
+
+      if (barcodes.isNotEmpty) {
+        // Take the first QR code detected
+        final qrValue = barcodes.first.rawValue ?? '';
+        _inputCtrl.text = qrValue;
+        context.read<EditorBloc>().add(EditorSetFromQr(qrValue));
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(
@@ -58,6 +67,8 @@ class _EditorScreenState extends State<EditorScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+    } finally {
+      barcodeScanner.close();
     }
   }
 
