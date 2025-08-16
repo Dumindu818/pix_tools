@@ -23,7 +23,6 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
   bool _isValidPixBrCode(String value) {
     if (value.isEmpty) return false;
 
-    // Basic checks for Pix BR codes (you can improve with regex or EMV parsing)
     final normalized = value.trim().toUpperCase();
 
     return normalized.startsWith("000201") &&
@@ -32,7 +31,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
   }
 
   Future<void> _scanCamera() async {
-    FocusScope.of(context).unfocus(); // Hide keyboard before opening scanner
+    FocusScope.of(context).unfocus();
     final result = await Navigator.of(
       context,
     ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
@@ -55,7 +54,6 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
       final barcodes = await barcodeScanner.processImage(inputImage);
 
       if (barcodes.isNotEmpty) {
-        // Take the first QR code detected
         final qrValue = barcodes.first.rawValue ?? '';
         _inputCtrl.text = qrValue;
         context.read<DebuggerBloc>().add(DebuggerSetFromQr(qrValue));
@@ -76,7 +74,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
   }
 
   void _onParsePressed() {
-    FocusScope.of(context).unfocus(); // Hide keyboard
+    FocusScope.of(context).unfocus();
     final input = _inputCtrl.text.trim();
 
     if (_isValidPixBrCode(input)) {
@@ -85,18 +83,38 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
       );
-      // Clear only if user typed manually
       if (_inputCtrl.text.isNotEmpty) {
         _inputCtrl.clear();
       }
     }
   }
 
+  Future<void> _onPastePressed() async {
+    final data = await Clipboard.getData('text/plain');
+    if (data != null && data.text != null && data.text!.isNotEmpty) {
+      setState(() {
+        _inputCtrl.text = data.text!;
+      });
+      context.read<DebuggerBloc>().add(DebuggerSetInput(data.text!));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
+    }
+  }
+
+  void _onClearPressed() {
+    setState(() {
+      _inputCtrl.clear();
+    });
+    context.read<DebuggerBloc>().add(const DebuggerSetInput(''));
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus(); // Hide keyboard on background tap
+        FocusScope.of(context).unfocus();
       },
       child: BlocConsumer<DebuggerBloc, DebuggerState>(
         listener: (context, state) {
@@ -117,15 +135,33 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _inputCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Enter Pix BR Code',
-                    hintText: 'Paste code or scan',
-                  ),
-                  onChanged: (v) =>
-                      context.read<DebuggerBloc>().add(DebuggerSetInput(v)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _inputCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Enter Pix BR Code',
+                          hintText: 'Paste code or scan',
+                        ),
+                        onChanged: (v) => context.read<DebuggerBloc>().add(
+                          DebuggerSetInput(v),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: "Paste",
+                      icon: const Icon(Icons.paste),
+                      onPressed: _onPastePressed,
+                    ),
+                    IconButton(
+                      tooltip: "Clear",
+                      icon: const Icon(Icons.clear),
+                      onPressed: _onClearPressed,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Wrap(

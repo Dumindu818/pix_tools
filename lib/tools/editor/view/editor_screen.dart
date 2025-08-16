@@ -36,9 +36,7 @@ class _EditorScreenState extends State<EditorScreen> {
   /// --- Pix BR Code validation ---
   bool _isValidPixBrCode(String value) {
     if (value.isEmpty) return false;
-
     final normalized = value.trim().toUpperCase();
-
     return normalized.startsWith("000201") &&
         normalized.contains("BR.GOV.BCB.PIX") &&
         normalized.length > 20;
@@ -140,6 +138,27 @@ class _EditorScreenState extends State<EditorScreen> {
     }
   }
 
+  Future<void> _onPastePressed() async {
+    final data = await Clipboard.getData('text/plain');
+    if (data != null && data.text != null && data.text!.isNotEmpty) {
+      setState(() {
+        _inputCtrl.text = data.text!;
+      });
+      context.read<EditorBloc>().add(EditorSetInput(data.text!));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
+    }
+  }
+
+  void _onClearPressed() {
+    setState(() {
+      _inputCtrl.clear();
+    });
+    context.read<EditorBloc>().add(const EditorSetInput(''));
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -175,14 +194,31 @@ class _EditorScreenState extends State<EditorScreen> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _inputCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Enter BR Code (or scan/pick)',
-                  ),
-                  onChanged: (v) =>
-                      context.read<EditorBloc>().add(EditorSetInput(v)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _inputCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Enter BR Code (or scan/pick)',
+                        ),
+                        onChanged: (v) =>
+                            context.read<EditorBloc>().add(EditorSetInput(v)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: "Paste",
+                      icon: const Icon(Icons.paste),
+                      onPressed: _onPastePressed,
+                    ),
+                    IconButton(
+                      tooltip: "Clear",
+                      icon: const Icon(Icons.clear),
+                      onPressed: _onClearPressed,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 TextField(

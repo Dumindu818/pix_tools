@@ -33,7 +33,22 @@ class _PixScreenState extends State<PixScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _nameController.dispose();
+    _keyController.dispose();
+    _cityController.dispose();
+    _amountController.dispose();
+    _descController.dispose();
+    _txidController.dispose();
     super.dispose();
+  }
+
+  void _clearAllFields() {
+    _nameController.clear();
+    _keyController.clear();
+    _cityController.clear();
+    _amountController.clear();
+    _descController.clear();
+    _txidController.clear();
   }
 
   @override
@@ -76,7 +91,7 @@ class _PixScreenState extends State<PixScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildField('Name', _nameController),
-                  _buildField('Pix Key', _keyController),
+                  _buildPixKeyField('Pix Key', _keyController),
                   _buildField('City', _cityController),
                   _buildField(
                     'Amount in BRL (optional)',
@@ -86,6 +101,19 @@ class _PixScreenState extends State<PixScreen> {
                   _buildField('Description (optional)', _descController),
                   _buildField('Transaction ID (optional)', _txidController),
                   const SizedBox(height: 16),
+
+                  // Clear Button
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.clear),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: _clearAllFields,
+                    label: const Text('Clear All Fields'),
+                  ),
+                  const SizedBox(height: 16),
+
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(
@@ -183,6 +211,39 @@ class _PixScreenState extends State<PixScreen> {
           labelText: label,
           border: const OutlineInputBorder(),
         ),
+      ),
+    );
+  }
+
+  /// Special Field for Pix Key with Paste option
+  Widget _buildPixKeyField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: label,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.paste),
+            tooltip: "Paste",
+            onPressed: () async {
+              final data = await Clipboard.getData(Clipboard.kTextPlain);
+              if (data != null && data.text != null) {
+                setState(() {
+                  controller.text = data.text!;
+                });
+              }
+            },
+          ),
+        ],
       ),
     );
   }
