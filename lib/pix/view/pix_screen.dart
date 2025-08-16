@@ -87,6 +87,14 @@ class _PixScreenState extends State<PixScreen> {
                   _buildField('Transaction ID (optional)', _txidController),
                   const SizedBox(height: 16),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimary, // swapped
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary, // swapped
+                    ),
                     onPressed: () {
                       FocusScope.of(context).unfocus();
                       final options = PixOptions(
