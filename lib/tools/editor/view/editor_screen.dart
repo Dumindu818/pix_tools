@@ -27,13 +27,17 @@ class _EditorScreenState extends State<EditorScreen> {
   final _qrKey = GlobalKey();
   final ScrollController _scrollController = ScrollController();
 
+  final Color violet = const Color(0xFF5e17eb);
+  final Color lightViolet = const Color(0xFFd7c4ff);
+
   @override
   void dispose() {
     _scrollController.dispose();
+    _inputCtrl.dispose();
+    _amountCtrl.dispose();
     super.dispose();
   }
 
-  /// --- Pix BR Code validation ---
   bool _isValidPixBrCode(String value) {
     if (value.isEmpty) return false;
     final normalized = value.trim().toUpperCase();
@@ -44,9 +48,8 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Future<void> _scanCamera() async {
     FocusScope.of(context).unfocus();
-    final result = await Navigator.of(
-      context,
-    ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
+    final result = await Navigator.of(context)
+        .push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
     if (result != null && mounted) {
       _inputCtrl.text = result;
       context.read<EditorBloc>().add(EditorSetFromQr(result));
@@ -68,17 +71,15 @@ class _EditorScreenState extends State<EditorScreen> {
         final qrValue = barcodes.first.rawValue ?? '';
         _inputCtrl.text = qrValue;
         context.read<EditorBloc>().add(EditorSetFromQr(qrValue));
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('No QR found in image')));
+      } else if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('No QR found in image')));
       }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+      }
     } finally {
       barcodeScanner.close();
     }
@@ -89,9 +90,8 @@ class _EditorScreenState extends State<EditorScreen> {
     if (code == null || code.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('BR code copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('BR code copied')));
   }
 
   Future<void> _shareQr() async {
@@ -99,7 +99,7 @@ class _EditorScreenState extends State<EditorScreen> {
     if (_qrKey.currentContext == null) return;
     try {
       final boundary =
-          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
@@ -110,18 +110,14 @@ class _EditorScreenState extends State<EditorScreen> {
       );
       await file.writeAsBytes(pngBytes);
 
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Here is my Pix QR Code');
+      await Share.shareXFiles([XFile(file.path)], text: 'Here is my Pix QR Code');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Share failed: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Share failed: $e')));
     }
   }
 
-  /// --- Update BR Code with validation ---
   void _onUpdatePressed() {
     FocusScope.of(context).unfocus();
     final input = _inputCtrl.text.trim();
@@ -132,30 +128,23 @@ class _EditorScreenState extends State<EditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
       );
-      if (_inputCtrl.text.isNotEmpty) {
-        _inputCtrl.clear();
-      }
+      if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
     }
   }
 
   Future<void> _onPastePressed() async {
     final data = await Clipboard.getData('text/plain');
     if (data != null && data.text != null && data.text!.isNotEmpty) {
-      setState(() {
-        _inputCtrl.text = data.text!;
-      });
+      setState(() => _inputCtrl.text = data.text!);
       context.read<EditorBloc>().add(EditorSetInput(data.text!));
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
     }
   }
 
   void _onClearPressed() {
-    setState(() {
-      _inputCtrl.clear();
-    });
+    setState(() => _inputCtrl.clear());
     context.read<EditorBloc>().add(const EditorSetInput(''));
   }
 
@@ -163,143 +152,273 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
-      child: BlocConsumer<EditorBloc, EditorState>(
-        listener: (context, state) {
-          if (state.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error!)));
-          }
+      child: Scaffold(
+        backgroundColor: Colors.white, // ✅ Set screen background to white
+        body: BlocConsumer<EditorBloc, EditorState>(
+          listener: (context, state) {
+            if (state.error != null) {
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(state.error!)));
+            }
 
-          // ✅ Scroll to bottom when QR code is generated
-          if (state.output != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOut,
-              );
-            });
-          }
-        },
-        builder: (context, state) {
-          return SingleChildScrollView(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Pix BR Code Editor',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _inputCtrl,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Enter BR Code (or scan/pick)',
+            if (state.output != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                );
+              });
+            }
+          },
+          builder: (context, state) {
+            return SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // --- Input Section ---
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: lightViolet.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: lightViolet),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Pix BR Code Editor',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: violet,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        onChanged: (v) =>
-                            context.read<EditorBloc>().add(EditorSetInput(v)),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: "Paste",
-                      icon: const Icon(Icons.paste),
-                      onPressed: _onPastePressed,
-                    ),
-                    IconButton(
-                      tooltip: "Clear",
-                      icon: const Icon(Icons.clear),
-                      onPressed: _onClearPressed,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _amountCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'New Amount in BRL(leave blank for dynamic)',
-                  ),
-                  onChanged: (v) => context.read<EditorBloc>().add(
-                    EditorSetAmount(v.isEmpty ? null : v),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: _onUpdatePressed,
-                      icon: const Icon(Icons.update),
-                      label: const Text('Update BR Code'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _scanCamera,
-                      icon: const Icon(Icons.photo_camera),
-                      label: const Text('Scan with Camera'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.image),
-                      label: const Text('Decode from Image'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (state.output != null) ...[
-                  const Text('Updated BR Code:'),
-                  const SizedBox(height: 6),
-                  SelectableText(
-                    state.output!,
-                    maxLines: 4,
-                    style: const TextStyle(fontFamily: 'monospace'),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () => _copyOutput(state.output),
-                        icon: const Icon(Icons.copy),
-                        label: const Text('Copy BR Code'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _shareQr,
-                        icon: const Icon(Icons.share),
-                        label: const Text('Share QR Code'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: RepaintBoundary(
-                      key: _qrKey,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        color: Colors.white,
-                        child: QrImageView(
-                          data: state.output!,
-                          version: QrVersions.auto,
-                          size: 220,
+                        const SizedBox(height: 16),
+
+                        // BR Code Input + Paste/Clear
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _inputCtrl,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: 'Enter BR Code (or scan/pick)',
+                                  labelStyle: TextStyle(color: violet),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: violet),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: lightViolet),
+                                  ),
+                                  contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                ),
+                                onChanged: (v) =>
+                                    context.read<EditorBloc>().add(EditorSetInput(v)),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              children: [
+                                IconButton(
+                                  tooltip: "Paste",
+                                  icon: Icon(Icons.paste, color: violet),
+                                  onPressed: _onPastePressed,
+                                ),
+                                const SizedBox(height: 8),
+                                IconButton(
+                                  tooltip: "Clear",
+                                  icon: Icon(Icons.clear, color: violet),
+                                  onPressed: _onClearPressed,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ),
+
+                        const SizedBox(height: 12),
+
+                        // 🔹 Scan & Decode buttons (same row, below BR input, above amount)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: violet,
+                                  side: BorderSide(color: lightViolet, width: 1.5),
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), // less horizontal padding
+                                ),
+                                onPressed: _scanCamera,
+                                icon: const Icon(Icons.photo_camera),
+                                label: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Scan with Camera'),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: violet,
+                                  side: BorderSide(color: lightViolet, width: 1.5),
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                ),
+                                onPressed: _pickImage,
+                                icon: const Icon(Icons.image),
+                                label: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Decode from Image'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+
+                        const SizedBox(height: 12),
+
+                        // Amount input
+                        TextField(
+                          controller: _amountCtrl,
+                          keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'New Amount in BRL (leave blank for dynamic)',
+                            labelStyle: TextStyle(color: violet),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: violet),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: lightViolet),
+                            ),
+                          ),
+                          onChanged: (v) => context
+                              .read<EditorBloc>()
+                              .add(EditorSetAmount(v.isEmpty ? null : v)),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Update button
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: violet,
+                            foregroundColor: Colors.white,
+                            padding:
+                            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          ),
+                          onPressed: _onUpdatePressed,
+                          icon: const Icon(Icons.update),
+                          label: const Text('Update BR Code'),
+                        ),
+                      ],
                     ),
                   ),
+
+
+                  const SizedBox(height: 16),
+
+                  // --- Output Section ---
+                  if (state.output != null)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: lightViolet.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: lightViolet),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Updated BR Code:',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, color: violet),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: lightViolet.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: lightViolet),
+                            ),
+                            child: SelectableText(
+                              state.output!,
+                              maxLines: 4,
+                              style: const TextStyle(fontFamily: 'monospace'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _copyOutput(state.output),
+                                  icon: const Icon(Icons.copy),
+                                  label: const Text('Copy BR Code'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: lightViolet,
+                                    foregroundColor: violet,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _shareQr,
+                                  icon: const Icon(Icons.share),
+                                  label: const Text('Share QR Code'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: lightViolet,
+                                    foregroundColor: violet,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ],
+                              ),
+                              child: RepaintBoundary(
+                                key: _qrKey,
+                                child: QrImageView(
+                                  data: state.output!,
+                                  version: QrVersions.auto,
+                                  size: 220,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

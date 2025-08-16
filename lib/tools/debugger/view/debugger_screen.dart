@@ -3,38 +3,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:qr_code_tools/qr_code_tools.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import '../../../shared/scanner/qr_scanner_page.dart';
 import '../bloc/debugger_bloc.dart';
 import '../bloc/debugger_event.dart';
 import '../bloc/debugger_state.dart';
-import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class DebuggerScreen extends StatefulWidget {
   const DebuggerScreen({super.key});
+
   @override
   State<DebuggerScreen> createState() => _DebuggerScreenState();
 }
 
 class _DebuggerScreenState extends State<DebuggerScreen> {
   final _inputCtrl = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
-  /// --- Pix BR Code validation ---
+  final Color violet = const Color(0xFF5e17eb);
+  final Color lightViolet = const Color(0xFFd7c4ff);
+
   bool _isValidPixBrCode(String value) {
     if (value.isEmpty) return false;
-
     final normalized = value.trim().toUpperCase();
-
     return normalized.startsWith("000201") &&
         normalized.contains("BR.GOV.BCB.PIX") &&
-        normalized.length > 20; // crude min length
+        normalized.length > 20;
   }
 
   Future<void> _scanCamera() async {
     FocusScope.of(context).unfocus();
-    final result = await Navigator.of(
-      context,
-    ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
+    final result = await Navigator.of(context)
+        .push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
     if (result != null && mounted) {
       _inputCtrl.text = result;
       context.read<DebuggerBloc>().add(DebuggerSetFromQr(result));
@@ -52,22 +52,19 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
 
     try {
       final barcodes = await barcodeScanner.processImage(inputImage);
-
       if (barcodes.isNotEmpty) {
         final qrValue = barcodes.first.rawValue ?? '';
         _inputCtrl.text = qrValue;
         context.read<DebuggerBloc>().add(DebuggerSetFromQr(qrValue));
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('No QR found in image')));
+      } else if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('No QR found in image')));
       }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+      }
     } finally {
       barcodeScanner.close();
     }
@@ -83,117 +80,194 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
       );
-      if (_inputCtrl.text.isNotEmpty) {
-        _inputCtrl.clear();
-      }
+      if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
     }
   }
 
   Future<void> _onPastePressed() async {
     final data = await Clipboard.getData('text/plain');
     if (data != null && data.text != null && data.text!.isNotEmpty) {
-      setState(() {
-        _inputCtrl.text = data.text!;
-      });
+      setState(() => _inputCtrl.text = data.text!);
       context.read<DebuggerBloc>().add(DebuggerSetInput(data.text!));
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
     }
   }
 
   void _onClearPressed() {
-    setState(() {
-      _inputCtrl.clear();
-    });
+    setState(() => _inputCtrl.clear());
     context.read<DebuggerBloc>().add(const DebuggerSetInput(''));
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
+      onTap: () => FocusScope.of(context).unfocus(),
       child: BlocConsumer<DebuggerBloc, DebuggerState>(
         listener: (context, state) {
           if (state.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error!)));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(state.error!)));
           }
         },
         builder: (context, state) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Pix BR Code Debugger',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _inputCtrl,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Enter Pix BR Code',
-                          hintText: 'Paste code or scan',
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // --- Input Section ---
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: lightViolet.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: lightViolet),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Pix BR Code Debugger',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: violet,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        onChanged: (v) => context.read<DebuggerBloc>().add(
-                          DebuggerSetInput(v),
+                        const SizedBox(height: 16),
+
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // TextField
+                            Expanded(
+                              child: TextField(
+                                controller: _inputCtrl,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: 'Enter BR Code (or scan/pick)',
+                                  labelStyle: TextStyle(color: violet),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: violet),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: lightViolet),
+                                  ),
+                                  hintText: 'Paste code or scan',
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 12,
+                                  ),
+                                ),
+                                onChanged: (v) =>
+                                    context.read<DebuggerBloc>().add(DebuggerSetInput(v)),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Paste + Clear buttons stacked vertically
+                            Column(
+                              children: [
+                                IconButton(
+                                  tooltip: "Paste",
+                                  icon: Icon(Icons.paste, color: violet),
+                                  onPressed: _onPastePressed,
+                                ),
+                                const SizedBox(height: 8),
+                                IconButton(
+                                  tooltip: "Clear",
+                                  icon: Icon(Icons.clear, color: violet),
+                                  onPressed: _onClearPressed,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 16),
+
+                        // Camera + Decode buttons in SAME horizontal line
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: violet,
+                                  side: BorderSide(color: lightViolet, width: 1.5),
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                ),
+                                onPressed: _scanCamera,
+                                icon: const Icon(Icons.photo_camera),
+                                label: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Scan with Camera', overflow: TextOverflow.ellipsis),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: violet,
+                                  side: BorderSide(color: lightViolet, width: 1.5),
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                ),
+                                onPressed: _pickImage,
+                                icon: const Icon(Icons.image),
+                                label: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Decode from Image', overflow: TextOverflow.ellipsis),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+
+                        const SizedBox(height: 16),
+
+                        // Parse button BELOW those 2
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: violet,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                          ),
+                          onPressed: _onParsePressed,
+                          icon: const Icon(Icons.playlist_add_check),
+                          label: const Text('Parse BR Code'),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // --- Output Section ---
+                  Expanded(
+                    child: state.parsed.isEmpty
+                        ? Center(
+                      child: Text(
+                        'Parsed fields will appear here',
+                        style: TextStyle(color: violet),
                       ),
+                    )
+                        : Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: lightViolet.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: lightViolet),
+                      ),
+                      child: _ParsedTable(rows: state.parsed),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: "Paste",
-                      icon: const Icon(Icons.paste),
-                      onPressed: _onPastePressed,
-                    ),
-                    IconButton(
-                      tooltip: "Clear",
-                      icon: const Icon(Icons.clear),
-                      onPressed: _onClearPressed,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: _onParsePressed,
-                      icon: const Icon(Icons.playlist_add_check),
-                      label: const Text('Parse BR Code'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _scanCamera,
-                      icon: const Icon(Icons.photo_camera),
-                      label: const Text('Scan with Camera'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.image),
-                      label: const Text('Decode from Image'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: state.parsed.isEmpty
-                      ? const Center(
-                          child: Text('Parsed fields will appear here'),
-                        )
-                      : _ParsedTable(rows: state.parsed),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -231,8 +305,7 @@ class _ParsedTable extends StatelessWidget {
                       GestureDetector(
                         onDoubleTap: () async {
                           await Clipboard.setData(
-                            ClipboardData(text: (r['value'] ?? '').toString()),
-                          );
+                              ClipboardData(text: (r['value'] ?? '').toString()));
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Data copied')),
