@@ -191,7 +191,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     decimal: true,
                   ),
                   decoration: const InputDecoration(
-                    labelText: 'New Amount (leave blank for dynamic)',
+                    labelText: 'New Amount in BRL(leave blank for dynamic)',
                   ),
                   onChanged: (v) => context.read<EditorBloc>().add(
                     EditorSetAmount(v.isEmpty ? null : v),

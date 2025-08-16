@@ -79,7 +79,7 @@ class _PixScreenState extends State<PixScreen> {
                   _buildField('Pix Key', _keyController),
                   _buildField('City', _cityController),
                   _buildField(
-                    'Amount (optional)',
+                    'Amount in BRL (optional)',
                     _amountController,
                     isNumber: true,
                   ),
