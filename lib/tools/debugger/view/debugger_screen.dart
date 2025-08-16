@@ -19,6 +19,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
   final _inputCtrl = TextEditingController();
 
   Future<void> _scanCamera() async {
+    FocusScope.of(context).unfocus(); // Hide keyboard before opening scanner
     final result = await Navigator.of(
       context,
     ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
@@ -29,6 +30,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
   }
 
   Future<void> _pickImage() async {
+    FocusScope.of(context).unfocus(); // Hide keyboard before picking image
     final picker = ImagePicker();
     final xfile = await picker.pickImage(source: ImageSource.gallery);
     if (xfile == null) return;
@@ -53,70 +55,77 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<DebuggerBloc, DebuggerState>(
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.error!)));
-        }
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus(); // Hide keyboard on background tap
       },
-      builder: (context, state) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Pix BR Code Debugger',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _inputCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Enter Pix BR Code',
-                  hintText: 'Paste code or scan',
+      child: BlocConsumer<DebuggerBloc, DebuggerState>(
+        listener: (context, state) {
+          if (state.error != null) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.error!)));
+          }
+        },
+        builder: (context, state) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Pix BR Code Debugger',
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                onChanged: (v) =>
-                    context.read<DebuggerBloc>().add(DebuggerSetInput(v)),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () =>
-                        context.read<DebuggerBloc>().add(const DebuggerParse()),
-                    icon: const Icon(Icons.playlist_add_check),
-                    label: const Text('Parse BR Code'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _inputCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Enter Pix BR Code',
+                    hintText: 'Paste code or scan',
                   ),
-                  OutlinedButton.icon(
-                    onPressed: _scanCamera,
-                    icon: const Icon(Icons.photo_camera),
-                    label: const Text('Scan with Camera'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.image),
-                    label: const Text('Decode from Image'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: state.parsed.isEmpty
-                    ? const Center(
-                        child: Text('Parsed fields will appear here'),
-                      )
-                    : _ParsedTable(rows: state.parsed),
-              ),
-            ],
-          ),
-        );
-      },
+                  onChanged: (v) =>
+                      context.read<DebuggerBloc>().add(DebuggerSetInput(v)),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () {
+                        FocusScope.of(context).unfocus(); // Hide keyboard
+                        context.read<DebuggerBloc>().add(const DebuggerParse());
+                      },
+                      icon: const Icon(Icons.playlist_add_check),
+                      label: const Text('Parse BR Code'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _scanCamera,
+                      icon: const Icon(Icons.photo_camera),
+                      label: const Text('Scan with Camera'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.image),
+                      label: const Text('Decode from Image'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: state.parsed.isEmpty
+                      ? const Center(
+                          child: Text('Parsed fields will appear here'),
+                        )
+                      : _ParsedTable(rows: state.parsed),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
