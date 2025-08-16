@@ -33,6 +33,17 @@ class _EditorScreenState extends State<EditorScreen> {
     super.dispose();
   }
 
+  /// --- Pix BR Code validation ---
+  bool _isValidPixBrCode(String value) {
+    if (value.isEmpty) return false;
+
+    final normalized = value.trim().toUpperCase();
+
+    return normalized.startsWith("000201") &&
+        normalized.contains("BR.GOV.BCB.PIX") &&
+        normalized.length > 20;
+  }
+
   Future<void> _scanCamera() async {
     FocusScope.of(context).unfocus();
     final result = await Navigator.of(
@@ -112,6 +123,23 @@ class _EditorScreenState extends State<EditorScreen> {
     }
   }
 
+  /// --- Update BR Code with validation ---
+  void _onUpdatePressed() {
+    FocusScope.of(context).unfocus();
+    final input = _inputCtrl.text.trim();
+
+    if (_isValidPixBrCode(input)) {
+      context.read<EditorBloc>().add(const EditorUpdatePressed());
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
+      );
+      if (_inputCtrl.text.isNotEmpty) {
+        _inputCtrl.clear();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -175,12 +203,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.icon(
-                      onPressed: () {
-                        FocusScope.of(context).unfocus();
-                        context.read<EditorBloc>().add(
-                          const EditorUpdatePressed(),
-                        );
-                      },
+                      onPressed: _onUpdatePressed,
                       icon: const Icon(Icons.update),
                       label: const Text('Update BR Code'),
                     ),

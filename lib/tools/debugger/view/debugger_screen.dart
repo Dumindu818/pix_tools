@@ -8,7 +8,6 @@ import '../../../shared/scanner/qr_scanner_page.dart';
 import '../bloc/debugger_bloc.dart';
 import '../bloc/debugger_event.dart';
 import '../bloc/debugger_state.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class DebuggerScreen extends StatefulWidget {
@@ -19,6 +18,18 @@ class DebuggerScreen extends StatefulWidget {
 
 class _DebuggerScreenState extends State<DebuggerScreen> {
   final _inputCtrl = TextEditingController();
+
+  /// --- Pix BR Code validation ---
+  bool _isValidPixBrCode(String value) {
+    if (value.isEmpty) return false;
+
+    // Basic checks for Pix BR codes (you can improve with regex or EMV parsing)
+    final normalized = value.trim().toUpperCase();
+
+    return normalized.startsWith("000201") &&
+        normalized.contains("BR.GOV.BCB.PIX") &&
+        normalized.length > 20; // crude min length
+  }
 
   Future<void> _scanCamera() async {
     FocusScope.of(context).unfocus(); // Hide keyboard before opening scanner
@@ -64,6 +75,23 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
     }
   }
 
+  void _onParsePressed() {
+    FocusScope.of(context).unfocus(); // Hide keyboard
+    final input = _inputCtrl.text.trim();
+
+    if (_isValidPixBrCode(input)) {
+      context.read<DebuggerBloc>().add(const DebuggerParse());
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
+      );
+      // Clear only if user typed manually
+      if (_inputCtrl.text.isNotEmpty) {
+        _inputCtrl.clear();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -105,10 +133,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                   runSpacing: 8,
                   children: [
                     FilledButton.icon(
-                      onPressed: () {
-                        FocusScope.of(context).unfocus(); // Hide keyboard
-                        context.read<DebuggerBloc>().add(const DebuggerParse());
-                      },
+                      onPressed: _onParsePressed,
                       icon: const Icon(Icons.playlist_add_check),
                       label: const Text('Parse BR Code'),
                     ),
