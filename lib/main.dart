@@ -57,7 +57,7 @@ class _HomeTabsState extends State<HomeTabs> {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pix Multi Tools')),
+      appBar: AppBar(title: const Text('Pix Tools')),
       body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,

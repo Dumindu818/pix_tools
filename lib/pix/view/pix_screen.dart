@@ -28,6 +28,13 @@ class _PixScreenState extends State<PixScreen> {
   final _txidController = TextEditingController();
 
   final GlobalKey globalKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +51,21 @@ class _PixScreenState extends State<PixScreen> {
                 context,
               ).showSnackBar(SnackBar(content: Text(state.error!)));
             }
+
+            // Scroll to bottom when QR code is generated
+            if (state.pixCode != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                );
+              });
+            }
           },
           builder: (context, state) {
             return SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +182,6 @@ class _PixScreenState extends State<PixScreen> {
   Future<void> _shareQr(String pixCode) async {
     FocusScope.of(context).unfocus();
     try {
-      // ✅ Render QR on a white canvas
       final qrPainter = QrPainter(
         data: pixCode,
         version: QrVersions.auto,

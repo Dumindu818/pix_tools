@@ -6,15 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:qr_code_tools/qr_code_tools.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/rendering.dart';
-import 'package:share_plus/share_plus.dart'; // ✅ for sharing
+import 'package:share_plus/share_plus.dart';
 import '../../../shared/scanner/qr_scanner_page.dart';
 import '../bloc/editor_bloc.dart';
 import '../bloc/editor_event.dart';
 import '../bloc/editor_state.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class EditorScreen extends StatefulWidget {
@@ -27,9 +25,16 @@ class _EditorScreenState extends State<EditorScreen> {
   final _inputCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
   final _qrKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _scanCamera() async {
-    FocusScope.of(context).unfocus(); // hide keyboard
+    FocusScope.of(context).unfocus();
     final result = await Navigator.of(
       context,
     ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
@@ -40,7 +45,7 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   Future<void> _pickImage() async {
-    FocusScope.of(context).unfocus(); // hide keyboard
+    FocusScope.of(context).unfocus();
     final picker = ImagePicker();
     final xfile = await picker.pickImage(source: ImageSource.gallery);
     if (xfile == null) return;
@@ -50,9 +55,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
     try {
       final barcodes = await barcodeScanner.processImage(inputImage);
-
       if (barcodes.isNotEmpty) {
-        // Take the first QR code detected
         final qrValue = barcodes.first.rawValue ?? '';
         _inputCtrl.text = qrValue;
         context.read<EditorBloc>().add(EditorSetFromQr(qrValue));
@@ -73,7 +76,7 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   Future<void> _copyOutput(String? code) async {
-    FocusScope.of(context).unfocus(); // hide keyboard
+    FocusScope.of(context).unfocus();
     if (code == null || code.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
@@ -82,9 +85,8 @@ class _EditorScreenState extends State<EditorScreen> {
     ).showSnackBar(const SnackBar(content: Text('BR code copied')));
   }
 
-  /// ✅ New: Share QR code instead of download
   Future<void> _shareQr() async {
-    FocusScope.of(context).unfocus(); // hide keyboard
+    FocusScope.of(context).unfocus();
     if (_qrKey.currentContext == null) return;
     try {
       final boundary =
@@ -99,7 +101,6 @@ class _EditorScreenState extends State<EditorScreen> {
       );
       await file.writeAsBytes(pngBytes);
 
-      /// ✅ Share the QR code image
       await Share.shareXFiles([
         XFile(file.path),
       ], text: 'Here is my Pix QR Code');
@@ -114,9 +115,7 @@ class _EditorScreenState extends State<EditorScreen> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus(); // hide keyboard on background tap
-      },
+      onTap: () => FocusScope.of(context).unfocus(),
       child: BlocConsumer<EditorBloc, EditorState>(
         listener: (context, state) {
           if (state.error != null) {
@@ -124,9 +123,21 @@ class _EditorScreenState extends State<EditorScreen> {
               context,
             ).showSnackBar(SnackBar(content: Text(state.error!)));
           }
+
+          // ✅ Scroll to bottom when QR code is generated
+          if (state.output != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+              );
+            });
+          }
         },
         builder: (context, state) {
           return SingleChildScrollView(
+            controller: _scrollController,
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -165,7 +176,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   children: [
                     FilledButton.icon(
                       onPressed: () {
-                        FocusScope.of(context).unfocus(); // hide keyboard
+                        FocusScope.of(context).unfocus();
                         context.read<EditorBloc>().add(
                           const EditorUpdatePressed(),
                         );
@@ -187,7 +198,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (state.output != null) ...[
-                  Text('Updated BR Code:'),
+                  const Text('Updated BR Code:'),
                   const SizedBox(height: 6),
                   SelectableText(
                     state.output!,
@@ -203,8 +214,6 @@ class _EditorScreenState extends State<EditorScreen> {
                         icon: const Icon(Icons.copy),
                         label: const Text('Copy BR Code'),
                       ),
-
-                      /// ✅ Changed Download → Share
                       OutlinedButton.icon(
                         onPressed: _shareQr,
                         icon: const Icon(Icons.share),
@@ -218,7 +227,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       key: _qrKey,
                       child: Container(
                         padding: const EdgeInsets.all(12),
-                        color: Colors.white, // ✅ white bg for sharing
+                        color: Colors.white,
                         child: QrImageView(
                           data: state.output!,
                           version: QrVersions.auto,
