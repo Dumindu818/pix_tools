@@ -217,6 +217,7 @@ class _EditorScreenState extends State<EditorScreen> {
                               child: TextField(
                                 controller: _inputCtrl,
                                 maxLines: 3,
+                                style: TextStyle(color: violet), // 👈 input text will be violet
                                 decoration: InputDecoration(
                                   labelText: 'Enter BR Code (or scan/pick)',
                                   labelStyle: TextStyle(color: violet),
@@ -311,6 +312,7 @@ class _EditorScreenState extends State<EditorScreen> {
                         // Amount input
                         TextField(
                           controller: _amountCtrl,
+                          style: TextStyle(color: violet), // 👈 input text will be violet
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
@@ -434,6 +436,14 @@ class _EditorScreenState extends State<EditorScreen> {
                                 child: QrImageView(
                                   data: state.output!,
                                   version: QrVersions.auto,
+                                  dataModuleStyle: QrDataModuleStyle(
+                                    dataModuleShape: QrDataModuleShape.square,
+                                    color: violet,
+                                  ),
+                                  eyeStyle: QrEyeStyle(
+                                    eyeShape: QrEyeShape.square,
+                                    color: violet,
+                                  ),
                                   size: 220,
                                 ),
                               ),
