@@ -129,15 +129,53 @@ class _EditorScreenState extends State<EditorScreen> {
     FocusScope.of(context).unfocus();
     final input = _inputCtrl.text.trim();
 
-    if (_isValidPixBrCode(input)) {
-      context.read<EditorBloc>().add(const EditorUpdatePressed());
-    } else {
+    // 1️⃣ Check if BR code is empty
+    if (input.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No BR Code found. Please enter a BR Code.')),
+      );
+      // Scroll down anyway
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      });
+      return;
+    }
+
+    // 2️⃣ Validate BR Code
+    if (!_isValidPixBrCode(input)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid PIX BR Code. Please try again.')),
       );
       if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
+      // Scroll down anyway
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      });
+      return;
     }
+
+    // 3️⃣ Valid BR Code → trigger update
+    context.read<EditorBloc>().add(const EditorUpdatePressed());
+
+    // Scroll down
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+      );
+    });
   }
+
+
 
   Future<void> _onPastePressed() async {
     final data = await Clipboard.getData('text/plain');
@@ -385,7 +423,11 @@ class _EditorScreenState extends State<EditorScreen> {
                             child: SelectableText(
                               state.output!,
                               maxLines: 4,
-                              style: const TextStyle(fontFamily: 'monospace'),
+                                style: TextStyle(
+                                  color: violet, // 👈 violet text
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
                             ),
                           ),
                           const SizedBox(height: 8),

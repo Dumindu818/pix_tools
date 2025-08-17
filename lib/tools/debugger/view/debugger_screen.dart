@@ -77,15 +77,27 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
     FocusScope.of(context).unfocus();
     final input = _inputCtrl.text.trim();
 
-    if (_isValidPixBrCode(input)) {
-      context.read<DebuggerBloc>().add(const DebuggerParse());
-    } else {
+    // Check if BR code is empty
+    if (input.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No BR Code found. Please enter a BR Code.')),
+      );
+      return;
+    }
+
+    // Validate BR code
+    if (!_isValidPixBrCode(input)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid PIX BR Code. Please try again.')),
       );
       if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
+      return;
     }
+
+    // Valid BR code → trigger parse
+    context.read<DebuggerBloc>().add(const DebuggerParse());
   }
+
 
   Future<void> _onPastePressed() async {
     final data = await Clipboard.getData('text/plain');
