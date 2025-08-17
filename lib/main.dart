@@ -69,7 +69,7 @@ class _HomeTabsState extends State<HomeTabs> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'PIX TOOLS',
+          'PIX Tools',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white, // default font color on colored background
@@ -92,10 +92,7 @@ class _HomeTabsState extends State<HomeTabs> {
           elevation: 0,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'QR Gen'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              label: 'Debugger',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Decoder'),
             BottomNavigationBarItem(icon: Icon(Icons.edit), label: 'Editor'),
           ],
         ),

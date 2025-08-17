@@ -48,8 +48,9 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Future<void> _scanCamera() async {
     FocusScope.of(context).unfocus();
-    final result = await Navigator.of(context)
-        .push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
+    final result = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
     if (result != null && mounted) {
       _inputCtrl.text = result;
       context.read<EditorBloc>().add(EditorSetFromQr(result));
@@ -72,13 +73,15 @@ class _EditorScreenState extends State<EditorScreen> {
         _inputCtrl.text = qrValue;
         context.read<EditorBloc>().add(EditorSetFromQr(qrValue));
       } else if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('No QR found in image')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('No QR found in image')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Decode failed: $e')));
       }
     } finally {
       barcodeScanner.close();
@@ -90,8 +93,9 @@ class _EditorScreenState extends State<EditorScreen> {
     if (code == null || code.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('BR code copied')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('BR code copied')));
   }
 
   Future<void> _shareQr() async {
@@ -99,7 +103,7 @@ class _EditorScreenState extends State<EditorScreen> {
     if (_qrKey.currentContext == null) return;
     try {
       final boundary =
-      _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
@@ -110,11 +114,14 @@ class _EditorScreenState extends State<EditorScreen> {
       );
       await file.writeAsBytes(pngBytes);
 
-      await Share.shareXFiles([XFile(file.path)], text: 'Here is my Pix QR Code');
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Here is my PIX QR Code');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Share failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Share failed: $e')));
     }
   }
 
@@ -126,7 +133,7 @@ class _EditorScreenState extends State<EditorScreen> {
       context.read<EditorBloc>().add(const EditorUpdatePressed());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
+        const SnackBar(content: Text('Invalid PIX BR Code. Please try again.')),
       );
       if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
     }
@@ -138,8 +145,9 @@ class _EditorScreenState extends State<EditorScreen> {
       setState(() => _inputCtrl.text = data.text!);
       context.read<EditorBloc>().add(EditorSetInput(data.text!));
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
     }
   }
 
@@ -157,8 +165,9 @@ class _EditorScreenState extends State<EditorScreen> {
         body: BlocConsumer<EditorBloc, EditorState>(
           listener: (context, state) {
             if (state.error != null) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(state.error!)));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.error!)));
             }
 
             if (state.output != null) {
@@ -190,7 +199,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Pix BR Code Editor',
+                          'PIX BR Code Editor',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -217,11 +226,14 @@ class _EditorScreenState extends State<EditorScreen> {
                                   enabledBorder: OutlineInputBorder(
                                     borderSide: BorderSide(color: lightViolet),
                                   ),
-                                  contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 12,
+                                  ),
                                 ),
-                                onChanged: (v) =>
-                                    context.read<EditorBloc>().add(EditorSetInput(v)),
+                                onChanged: (v) => context
+                                    .read<EditorBloc>()
+                                    .add(EditorSetInput(v)),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -252,8 +264,14 @@ class _EditorScreenState extends State<EditorScreen> {
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: violet,
-                                  side: BorderSide(color: lightViolet, width: 1.5),
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), // less horizontal padding
+                                  side: BorderSide(
+                                    color: lightViolet,
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 8,
+                                  ), // less horizontal padding
                                 ),
                                 onPressed: _scanCamera,
                                 icon: const Icon(Icons.photo_camera),
@@ -268,8 +286,14 @@ class _EditorScreenState extends State<EditorScreen> {
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: violet,
-                                  side: BorderSide(color: lightViolet, width: 1.5),
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                  side: BorderSide(
+                                    color: lightViolet,
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 8,
+                                  ),
                                 ),
                                 onPressed: _pickImage,
                                 icon: const Icon(Icons.image),
@@ -282,16 +306,17 @@ class _EditorScreenState extends State<EditorScreen> {
                           ],
                         ),
 
-
                         const SizedBox(height: 12),
 
                         // Amount input
                         TextField(
                           controller: _amountCtrl,
-                          keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           decoration: InputDecoration(
-                            labelText: 'New Amount in BRL (leave blank for dynamic)',
+                            labelText:
+                                'New Amount in BRL (leave blank for dynamic)',
                             labelStyle: TextStyle(color: violet),
                             focusedBorder: OutlineInputBorder(
                               borderSide: BorderSide(color: violet),
@@ -300,9 +325,9 @@ class _EditorScreenState extends State<EditorScreen> {
                               borderSide: BorderSide(color: lightViolet),
                             ),
                           ),
-                          onChanged: (v) => context
-                              .read<EditorBloc>()
-                              .add(EditorSetAmount(v.isEmpty ? null : v)),
+                          onChanged: (v) => context.read<EditorBloc>().add(
+                            EditorSetAmount(v.isEmpty ? null : v),
+                          ),
                         ),
 
                         const SizedBox(height: 12),
@@ -312,8 +337,10 @@ class _EditorScreenState extends State<EditorScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: violet,
                             foregroundColor: Colors.white,
-                            padding:
-                            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
                           ),
                           onPressed: _onUpdatePressed,
                           icon: const Icon(Icons.update),
@@ -322,7 +349,6 @@ class _EditorScreenState extends State<EditorScreen> {
                       ],
                     ),
                   ),
-
 
                   const SizedBox(height: 16),
 
@@ -341,7 +367,9 @@ class _EditorScreenState extends State<EditorScreen> {
                           Text(
                             'Updated BR Code:',
                             style: TextStyle(
-                                fontWeight: FontWeight.bold, color: violet),
+                              fontWeight: FontWeight.bold,
+                              color: violet,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Container(
@@ -398,7 +426,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                     color: Colors.black.withOpacity(0.1),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
-                                  )
+                                  ),
                                 ],
                               ),
                               child: RepaintBoundary(

@@ -33,8 +33,9 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
 
   Future<void> _scanCamera() async {
     FocusScope.of(context).unfocus();
-    final result = await Navigator.of(context)
-        .push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
+    final result = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerPage()));
     if (result != null && mounted) {
       _inputCtrl.text = result;
       context.read<DebuggerBloc>().add(DebuggerSetFromQr(result));
@@ -57,13 +58,15 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
         _inputCtrl.text = qrValue;
         context.read<DebuggerBloc>().add(DebuggerSetFromQr(qrValue));
       } else if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('No QR found in image')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('No QR found in image')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Decode failed: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Decode failed: $e')));
       }
     } finally {
       barcodeScanner.close();
@@ -78,7 +81,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
       context.read<DebuggerBloc>().add(const DebuggerParse());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
+        const SnackBar(content: Text('Invalid PIX BR Code. Please try again.')),
       );
       if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
     }
@@ -90,8 +93,9 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
       setState(() => _inputCtrl.text = data.text!);
       context.read<DebuggerBloc>().add(DebuggerSetInput(data.text!));
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
     }
   }
 
@@ -107,8 +111,9 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
       child: BlocConsumer<DebuggerBloc, DebuggerState>(
         listener: (context, state) {
           if (state.error != null) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.error!)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.error!)));
           }
         },
         builder: (context, state) {
@@ -131,7 +136,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Pix BR Code Debugger',
+                          'PIX BR Code Decoder',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -149,6 +154,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                               child: TextField(
                                 controller: _inputCtrl,
                                 maxLines: 3,
+                                style: TextStyle(color: violet), // 👈 input text will be violet
                                 decoration: InputDecoration(
                                   labelText: 'Enter BR Code (or scan/pick)',
                                   labelStyle: TextStyle(color: violet),
@@ -159,6 +165,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                                     borderSide: BorderSide(color: lightViolet),
                                   ),
                                   hintText: 'Paste code or scan',
+                                  hintStyle: TextStyle(color: violet.withOpacity(0.6)), // optional
                                   contentPadding: const EdgeInsets.symmetric(
                                     vertical: 16,
                                     horizontal: 12,
@@ -168,6 +175,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                                     context.read<DebuggerBloc>().add(DebuggerSetInput(v)),
                               ),
                             ),
+
                             const SizedBox(width: 8),
                             // Paste + Clear buttons stacked vertically
                             Column(
@@ -196,14 +204,23 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: violet,
-                                  side: BorderSide(color: lightViolet, width: 1.5),
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                  side: BorderSide(
+                                    color: lightViolet,
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 8,
+                                  ),
                                 ),
                                 onPressed: _scanCamera,
                                 icon: const Icon(Icons.photo_camera),
                                 label: const FittedBox(
                                   fit: BoxFit.scaleDown,
-                                  child: Text('Scan with Camera', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    'Scan with Camera',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
                             ),
@@ -212,20 +229,28 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: violet,
-                                  side: BorderSide(color: lightViolet, width: 1.5),
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                  side: BorderSide(
+                                    color: lightViolet,
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 8,
+                                  ),
                                 ),
                                 onPressed: _pickImage,
                                 icon: const Icon(Icons.image),
                                 label: const FittedBox(
                                   fit: BoxFit.scaleDown,
-                                  child: Text('Decode from Image', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    'Decode from Image',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-
 
                         const SizedBox(height: 16),
 
@@ -235,7 +260,9 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                             backgroundColor: violet,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
                           ),
                           onPressed: _onParsePressed,
                           icon: const Icon(Icons.playlist_add_check),
@@ -263,9 +290,10 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: lightViolet),
                       ),
-                      child: _ParsedTable(rows: state.parsed),
+                      child: _ParsedTable(rows: state.parsed, violet: violet),
                     ),
                   ),
+
                 ],
               ),
             ),
@@ -277,8 +305,9 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
 }
 
 class _ParsedTable extends StatelessWidget {
-  const _ParsedTable({required this.rows});
+  const _ParsedTable({required this.rows, required this.violet});
   final List<Map<String, dynamic>> rows;
+  final Color violet;
 
   @override
   Widget build(BuildContext context) {
@@ -288,24 +317,71 @@ class _ParsedTable extends StatelessWidget {
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            columns: const [
-              DataColumn(label: Text('ID')),
-              DataColumn(label: Text('EMV Name')),
-              DataColumn(label: Text('Size')),
-              DataColumn(label: Text('Data')),
+            dividerThickness: 1.2,
+            headingRowColor: WidgetStateProperty.all(violet.withOpacity(0.1)),
+            dataRowColor: WidgetStateProperty.all(Colors.white),
+            border: TableBorder(
+              horizontalInside: BorderSide(color: violet, width: 0.8),
+              verticalInside: BorderSide(color: violet, width: 0.8),
+              top: BorderSide(color: violet, width: 1),
+              bottom: BorderSide(color: violet, width: 1),
+              left: BorderSide(color: violet, width: 1),
+              right: BorderSide(color: violet, width: 1),
+            ),
+            columns: [
+              DataColumn(
+                label: Text(
+                  'ID',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: violet),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'EMV Name',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: violet),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Size',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: violet),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Data',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: violet),
+                ),
+              ),
             ],
             rows: [
               for (final r in rows)
                 DataRow(
                   cells: [
-                    DataCell(Text(r['id'].toString())),
-                    DataCell(Text((r['emvName'] ?? '') as String)),
-                    DataCell(Text(r['size'].toString())),
+                    DataCell(
+                      Text(
+                        r['id'].toString(),
+                        style: TextStyle(color: violet),
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        (r['emvName'] ?? '') as String,
+                        style: TextStyle(color: violet),
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        r['size'].toString(),
+                        style: TextStyle(color: violet),
+                      ),
+                    ),
                     DataCell(
                       GestureDetector(
                         onDoubleTap: () async {
                           await Clipboard.setData(
-                              ClipboardData(text: (r['value'] ?? '').toString()));
+                            ClipboardData(text: (r['value'] ?? '').toString()),
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Data copied')),
@@ -315,6 +391,7 @@ class _ParsedTable extends StatelessWidget {
                         child: SelectableText(
                           (r['value'] ?? '').toString(),
                           maxLines: 3,
+                          style: TextStyle(color: violet),
                         ),
                       ),
                     ),
@@ -327,3 +404,4 @@ class _ParsedTable extends StatelessWidget {
     );
   }
 }
+

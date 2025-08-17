@@ -62,8 +62,9 @@ class _PixScreenState extends State<PixScreen> {
         child: BlocConsumer<PixBloc, PixState>(
           listener: (context, state) {
             if (state.error != null) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(state.error!)));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.error!)));
             }
 
             if (state.pixCode != null) {
@@ -109,10 +110,19 @@ class _PixScreenState extends State<PixScreen> {
                           _buildField('Name', _nameController),
                           _buildPixKeyField('Pix Key', _keyController),
                           _buildField('City', _cityController),
-                          _buildField('Amount in BRL (optional)', _amountController,
-                              isNumber: true),
-                          _buildField('Description (optional)', _descController),
-                          _buildField('Transaction ID (optional)', _txidController),
+                          _buildField(
+                            'Amount in BRL (optional)',
+                            _amountController,
+                            isNumber: true,
+                          ),
+                          _buildField(
+                            'Description (optional)',
+                            _descController,
+                          ),
+                          _buildField(
+                            'Transaction ID (optional)',
+                            _txidController,
+                          ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
@@ -142,19 +152,25 @@ class _PixScreenState extends State<PixScreen> {
                                       city: _cityController.text.trim(),
                                       amount: _amountController.text.isEmpty
                                           ? null
-                                          : double.tryParse(_amountController.text),
+                                          : double.tryParse(
+                                              _amountController.text,
+                                            ),
                                       description: _descController.text.isEmpty
                                           ? null
                                           : _descController.text.trim(),
-                                      transactionId: _txidController.text.isEmpty
+                                      transactionId:
+                                          _txidController.text.isEmpty
                                           ? '***'
                                           : _txidController.text.trim(),
                                     );
-                                    context
-                                        .read<PixBloc>()
-                                        .add(PixGeneratePressed(options: options));
+                                    context.read<PixBloc>().add(
+                                      PixGeneratePressed(options: options),
+                                    );
                                   },
-                                  child: const Text('Generate QR Code'),
+                                  child: const Text(
+                                    'Generate QR Code',
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
                             ],
@@ -179,7 +195,9 @@ class _PixScreenState extends State<PixScreen> {
                             Text(
                               'Pix BR Code:',
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold, color: violet),
+                                fontWeight: FontWeight.bold,
+                                color: violet,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Container(
@@ -189,7 +207,14 @@ class _PixScreenState extends State<PixScreen> {
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: lightViolet),
                               ),
-                              child: SelectableText(state.pixCode!),
+                              child: SelectableText(
+                                state.pixCode!,
+                                style: TextStyle(
+                                  color: violet, // 👈 violet text
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Row(
@@ -205,9 +230,14 @@ class _PixScreenState extends State<PixScreen> {
                                     onPressed: () {
                                       FocusScope.of(context).unfocus();
                                       Clipboard.setData(
-                                          ClipboardData(text: state.pixCode!));
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Copied!')),
+                                        ClipboardData(text: state.pixCode!),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Copied!'),
+                                        ),
                                       );
                                     },
                                   ),
@@ -238,7 +268,7 @@ class _PixScreenState extends State<PixScreen> {
                                       color: Colors.black.withOpacity(0.1),
                                       blurRadius: 8,
                                       offset: const Offset(0, 4),
-                                    )
+                                    ),
                                   ],
                                 ),
                                 child: RepaintBoundary(
@@ -246,6 +276,14 @@ class _PixScreenState extends State<PixScreen> {
                                   child: QrImageView(
                                     data: state.pixCode!,
                                     version: QrVersions.auto,
+                                    dataModuleStyle: QrDataModuleStyle(
+                                      dataModuleShape: QrDataModuleShape.square,
+                                      color: violet,
+                                    ),
+                                    eyeStyle: QrEyeStyle(
+                                      eyeShape: QrEyeShape.square,
+                                      color: violet,
+                                    ),
                                     size: 220,
                                   ),
                                 ),
@@ -264,14 +302,17 @@ class _PixScreenState extends State<PixScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller,
-      {bool isNumber = false}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextField(
         controller: controller,
-        keyboardType:
-        isNumber ? TextInputType.number : TextInputType.text,
+        style: TextStyle(color: violet), // 👈 makes input text violet
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: violet),
@@ -294,6 +335,7 @@ class _PixScreenState extends State<PixScreen> {
           Expanded(
             child: TextField(
               controller: controller,
+              style: TextStyle(color: violet), // 👈 makes PixKey input violet
               decoration: InputDecoration(
                 labelText: label,
                 labelStyle: TextStyle(color: violet),
@@ -345,11 +387,14 @@ class _PixScreenState extends State<PixScreen> {
       );
       await file.writeAsBytes(pngBytes);
 
-      await Share.shareXFiles([XFile(file.path)], text: 'Here is my Pix QR Code');
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Here is my Pix QR Code');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Share failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Share failed: $e')));
     }
   }
 }
