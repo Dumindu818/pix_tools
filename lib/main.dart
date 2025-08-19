@@ -69,7 +69,7 @@ class _HomeTabsState extends State<HomeTabs> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'PIX Tools',
+          'Pix Tools',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white, // default font color on colored background

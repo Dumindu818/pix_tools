@@ -88,7 +88,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
     // Validate BR code
     if (!_isValidPixBrCode(input)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid PIX BR Code. Please try again.')),
+        const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
       );
       if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
       return;
@@ -148,7 +148,7 @@ class _DebuggerScreenState extends State<DebuggerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'PIX BR Code Decoder',
+                          'Pix BR Code Decoder',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,

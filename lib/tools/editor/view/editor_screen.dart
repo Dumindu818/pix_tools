@@ -116,7 +116,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
       await Share.shareXFiles([
         XFile(file.path),
-      ], text: 'Here is my PIX QR Code');
+      ], text: 'Here is my Pix QR Code');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -148,7 +148,7 @@ class _EditorScreenState extends State<EditorScreen> {
     // 2️⃣ Validate BR Code
     if (!_isValidPixBrCode(input)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid PIX BR Code. Please try again.')),
+        const SnackBar(content: Text('Invalid Pix BR Code. Please try again.')),
       );
       if (_inputCtrl.text.isNotEmpty) _inputCtrl.clear();
       // Scroll down anyway
@@ -237,7 +237,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'PIX BR Code Editor',
+                          'Pix BR Code Editor',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
