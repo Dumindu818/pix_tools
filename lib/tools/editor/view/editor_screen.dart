@@ -451,8 +451,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                   icon: const Icon(Icons.share),
                                   label: const Text('Share QR Code'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: lightViolet,
-                                    foregroundColor: violet,
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.black,
                                   ),
                                 ),
                               ),
