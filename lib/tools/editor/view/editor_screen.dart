@@ -100,30 +100,46 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Future<void> _shareQr() async {
     FocusScope.of(context).unfocus();
-    if (_qrKey.currentContext == null) return;
+    if (context.read<EditorBloc>().state.output == null) return;
+
     try {
-      final boundary =
-          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      // Generate a pure black-on-white QR code for sharing
+      final painter = QrPainter(
+        data: context.read<EditorBloc>().state.output!,
+        version: QrVersions.auto,
+        gapless: true,
+        dataModuleStyle: const QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: Colors.black,
+        ),
+        eyeStyle: const QrEyeStyle(
+          eyeShape: QrEyeShape.square,
+          color: Colors.black,
+        ),
+      );
+
+      // Convert QR painter to image
+      final uiImage = await painter.toImage(600); // 600px for clarity
+      final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
+      // Save temporary file
       final dir = await getTemporaryDirectory();
       final file = File(
         '${dir.path}/shared_brcode_${DateTime.now().millisecondsSinceEpoch}.png',
       );
       await file.writeAsBytes(pngBytes);
 
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Here is my Pix QR Code');
+      // Share it
+      await Share.shareXFiles([XFile(file.path)], text: 'Here is my Pix QR Code');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Share failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Share failed: $e')),
+      );
     }
   }
+
 
   void _onUpdatePressed() {
     FocusScope.of(context).unfocus();
